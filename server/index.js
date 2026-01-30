@@ -133,6 +133,10 @@ app.post('/api/copy', (req, res) => {
     processCopy(selections, destination, rootSource, currentAbortController.signal, syncMode);
 });
 
+const { startSync, stopSync } = require('./lib/tablet-sync');
+
+// ... (previous endpoints) ...
+
 app.post('/api/stop', (req, res) => {
     if (currentAbortController) {
         currentAbortController.abort();
@@ -140,6 +144,34 @@ app.post('/api/stop', (req, res) => {
         res.json({ message: "Process stopped" });
     } else {
         res.status(400).json({ error: "No process running" });
+    }
+});
+
+// --- TABLET SYNC API ---
+
+app.post('/api/tablet-sync/start', (req, res) => {
+    const { sourcePath } = req.body;
+
+    // Default if not provided
+    const textSource = sourcePath || '/Volumes/NK-Working/Dummy/media';
+
+    const socket = io;
+
+    startSync(textSource, {
+        onLog: (msg) => socket.emit('tablet-log', msg),
+        onExit: (code) => socket.emit('tablet-complete', code)
+    });
+
+    res.json({ message: "Tablet sync started" });
+});
+
+app.post('/api/tablet-sync/stop', (req, res) => {
+    if (stopSync()) {
+        res.json({ message: "Sync stopped" });
+        io.emit('tablet-log', '🛑 Sync stopped by user.');
+        io.emit('tablet-complete', 1); // Treat as error/manual stop
+    } else {
+        res.status(400).json({ error: "No sync running" });
     }
 });
 

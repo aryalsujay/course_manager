@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { socket } from '../socket';
 
-export const useSyncState = () => {
+export const useSyncState = (initialDestination) => {
     // Data Structure
     const [structure, setStructure] = useState({});
 
@@ -17,8 +17,8 @@ export const useSyncState = () => {
     const [activeSource, setActiveSource] = useState(''); // Confirmed source from backend
     const [startTime, setStartTime] = useState(null); // For ETA
 
-    const [destination, setDestination] = useState('/Volumes/NK-Working/Dummy/');
-    const [sourcePath, setSourcePath] = useState('/Volumes/NK-Working/Reg-Updates/deshna'); // New: Source Path State
+    const [destination, setDestination] = useState(initialDestination || '/Volumes/NK-Working/Dummy/');
+    const [sourcePath, setSourcePath] = useState(''); // New: Source Path State (Empty allows backend auto-detect)
     const [syncMode, setSyncMode] = useState('mirror'); // update, overwrite, mirror
 
     const [logs, setLogs] = useState([]);

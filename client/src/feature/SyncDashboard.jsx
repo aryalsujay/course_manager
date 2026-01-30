@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSyncState } from '../hooks/useSyncState';
 import { Button } from '../components/ui/button';
 import { cn } from '../lib/utils';
 import { Play, CheckCircle, HardDrive, Check, Search, RefreshCw, AlertCircle, FolderInput, ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
 import CopyProgress from './CopyProgress';
 
-export default function SyncDashboard() {
+export default function SyncDashboard({ onDestinationChange, initialDestination }) {
     const {
         structure,
         allCourses,
@@ -37,10 +37,17 @@ export default function SyncDashboard() {
         setSelectedDiscourses,   // Setter for None
         startCopy,
         stopCopy
-    } = useSyncState();
+    } = useSyncState(initialDestination);
 
     const [instSearch, setInstSearch] = useState('');
     const [discSearch, setDiscSearch] = useState('');
+
+    // Sync destination with parent
+    useEffect(() => {
+        if (onDestinationChange) {
+            onDestinationChange(destination);
+        }
+    }, [destination, onDestinationChange]);
 
     // Custom Dropdown State
     const [isSourceDropdownOpen, setIsSourceDropdownOpen] = useState(false);
@@ -148,167 +155,169 @@ export default function SyncDashboard() {
     );
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-dark-900 text-gray-200 font-sans">
+        <div className="flex flex-col h-full w-full overflow-hidden bg-dark-900 text-gray-200 font-sans">
             {/* Header */}
-            <header className="flex-shrink-0 border-b border-dark-800 bg-dark-900/90 backdrop-blur p-4 flex flex-col gap-4 z-20">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <span className="w-8 h-8 rounded bg-primary-600 flex items-center justify-center text-white font-bold shadow-lg shadow-primary-900/20">V</span>
-                        <h1 className="text-xl font-bold tracking-tight text-white">VCM Sync</h1>
-                        <button
-                            onClick={refreshData}
-                            disabled={loading}
-                            className={cn("p-1 rounded-full hover:bg-dark-800 transition-colors ml-2", loading && "animate-spin")}
-                            title="Refresh Data"
-                        >
-                            <RefreshCw className="w-4 h-4 text-gray-400" />
-                        </button>
-                        {error && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {error}</span>}
-                    </div>
-                    {status === 'copying' ? (
-                        <Button
-                            onClick={stopCopy}
-                            variant="destructive"
-                            className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20"
-                        >
-                            Stop Copy
-                            <span className="ml-2">⏹</span>
-                        </Button>
-                    ) : (
-                        <Button
-                            onClick={startCopy}
-                            className="shadow-lg shadow-primary-900/20"
-                        >
-                            Start Copy
-                            <Play className="ml-2 w-4 h-4" />
-                        </Button>
-                    )}
-                </div>
-
-                {/* Path Config Bar */}
-                <div className="flex items-center gap-4">
-                    {/* Source Input */}
-                    <div className="flex-1 flex flex-col gap-1">
-                        <div className="relative z-50">
-                            <div
-                                className="flex items-center gap-2 bg-dark-800 px-3 py-1.5 rounded-md border border-dark-700 focus-within:border-primary-500 transition-colors cursor-text"
-                                onClick={() => setIsSourceDropdownOpen(true)}
+            <header className="flex-shrink-0 border-b border-dark-800 bg-dark-900/90 backdrop-blur z-20">
+                <div className="max-w-[1600px] mx-auto w-full p-4 pl-6 flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="w-8 h-8 rounded bg-primary-600 flex items-center justify-center text-white font-bold shadow-lg shadow-primary-900/20">V</span>
+                            <h1 className="text-xl font-bold tracking-tight text-white">VCM Sync</h1>
+                            <button
+                                onClick={refreshData}
+                                disabled={loading}
+                                className={cn("p-1 rounded-full hover:bg-dark-800 transition-colors ml-2", loading && "animate-spin")}
+                                title="Refresh Data"
                             >
-                                <FolderInput className="w-4 h-4 text-gray-400" />
-                                <span className="text-xs text-gray-500 font-mono flex-shrink-0">Source:</span>
-                                <input
-                                    type="text"
-                                    className="bg-transparent border-none outline-none text-sm w-full text-white placeholder-gray-500 font-mono"
-                                    placeholder="Default Source Path"
-                                    value={sourcePath}
-                                    onChange={(e) => setSourcePath(e.target.value)}
-                                    onFocus={() => setIsSourceDropdownOpen(true)}
-                                    onBlur={() => setTimeout(() => setIsSourceDropdownOpen(false), 200)} // Delay to allow click
-                                />
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsSourceDropdownOpen(!isSourceDropdownOpen);
-                                    }}
-                                    className="text-gray-500 hover:text-white"
-                                >
-                                    {isSourceDropdownOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                </button>
-                            </div>
-
-                            {/* Dropdown Options */}
-                            {isSourceDropdownOpen && (
-                                <div className="absolute top-full left-0 right-0 mt-1 bg-dark-800 border border-dark-600 rounded-md shadow-xl overflow-hidden z-[100]">
-                                    {sourcePaths.map((path) => (
-                                        <button
-                                            key={path}
-                                            className="w-full text-left px-3 py-2 text-xs font-mono text-gray-300 hover:bg-primary-600/20 hover:text-white transition-colors truncate block"
-                                            onClick={() => {
-                                                setSourcePath(path);
-                                                setIsSourceDropdownOpen(false);
-                                            }}
-                                        >
-                                            {path}
-                                        </button>
-                                    ))}
-                                    <div className="border-t border-dark-700 px-3 py-1.5 bg-dark-900/50">
-                                        <span className="text-[10px] text-gray-500 italic">Type to edit manually...</span>
-                                    </div>
-                                </div>
-                            )}
+                                <RefreshCw className="w-4 h-4 text-gray-400" />
+                            </button>
+                            {error && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {error}</span>}
                         </div>
-                        {activeSource && (
-                            <div className="text-[10px] text-gray-500 font-mono px-1 flex items-center gap-1">
-                                <span className="text-primary-500">✔ Active:</span> {activeSource}
-                            </div>
+                        {status === 'copying' ? (
+                            <Button
+                                onClick={stopCopy}
+                                variant="destructive"
+                                className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20"
+                            >
+                                Stop Copy
+                                <span className="ml-2">⏹</span>
+                            </Button>
+                        ) : (
+                            <Button
+                                onClick={startCopy}
+                                className="shadow-lg shadow-primary-900/20"
+                            >
+                                Start Copy
+                                <Play className="ml-2 w-4 h-4" />
+                            </Button>
                         )}
                     </div>
 
-                    {/* Destination Input */}
-                    <div className="flex-1 flex flex-col gap-1">
-                        <div className="relative z-40">
-                            <div className="flex items-center gap-2 bg-dark-800 px-3 py-1.5 rounded-md border border-dark-700 focus-within:border-primary-500 transition-colors cursor-text"
-                                onClick={() => setIsDestDropdownOpen(true)}
-                            >
-                                <HardDrive className="w-4 h-4 text-gray-400" />
-                                <span className="text-xs text-gray-500 font-mono flex-shrink-0">Dest:</span>
-                                <input
-                                    type="text"
-                                    className="bg-transparent border-none outline-none text-sm w-full text-white placeholder-gray-500 font-mono"
-                                    placeholder="/path/to/destination"
-                                    value={destination}
-                                    onChange={(e) => setDestination(e.target.value)}
-                                    onFocus={() => setIsDestDropdownOpen(true)}
-                                    onBlur={() => setTimeout(() => setIsDestDropdownOpen(false), 200)}
-                                />
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsDestDropdownOpen(!isDestDropdownOpen);
-                                    }}
-                                    className="text-gray-500 hover:text-white"
+                    {/* Path Config Bar */}
+                    <div className="flex items-center gap-4">
+                        {/* Source Input */}
+                        <div className="flex-1 flex flex-col gap-1">
+                            <div className="relative z-50">
+                                <div
+                                    className="flex items-center gap-2 bg-dark-800 px-3 py-1.5 rounded-md border border-dark-700 focus-within:border-primary-500 transition-colors cursor-text"
+                                    onClick={() => setIsSourceDropdownOpen(true)}
                                 >
-                                    {isDestDropdownOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                </button>
-                            </div>
+                                    <FolderInput className="w-4 h-4 text-gray-400" />
+                                    <span className="text-xs text-gray-500 font-mono flex-shrink-0">Source:</span>
+                                    <input
+                                        type="text"
+                                        className="bg-transparent border-none outline-none text-sm w-full text-white placeholder-gray-500 font-mono"
+                                        placeholder="Default Source Path"
+                                        value={sourcePath}
+                                        onChange={(e) => setSourcePath(e.target.value)}
+                                        onFocus={() => setIsSourceDropdownOpen(true)}
+                                        onBlur={() => setTimeout(() => setIsSourceDropdownOpen(false), 200)} // Delay to allow click
+                                    />
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsSourceDropdownOpen(!isSourceDropdownOpen);
+                                        }}
+                                        className="text-gray-500 hover:text-white"
+                                    >
+                                        {isSourceDropdownOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                    </button>
+                                </div>
 
-                            {/* Dropdown Options */}
-                            {isDestDropdownOpen && (
-                                <div className="absolute top-full left-0 right-0 mt-1 bg-dark-800 border border-dark-600 rounded-md shadow-xl overflow-hidden z-[100]">
-                                    {destinationPaths.map((path) => (
-                                        <button
-                                            key={path}
-                                            className="w-full text-left px-3 py-2 text-xs font-mono text-gray-300 hover:bg-primary-600/20 hover:text-white transition-colors truncate block"
-                                            onClick={() => {
-                                                setDestination(path);
-                                                setIsDestDropdownOpen(false);
-                                            }}
-                                        >
-                                            {path}
-                                        </button>
-                                    ))}
-                                    <div className="border-t border-dark-700 px-3 py-1.5 bg-dark-900/50">
-                                        <span className="text-[10px] text-gray-500 italic">Type to edit manually...</span>
+                                {/* Dropdown Options */}
+                                {isSourceDropdownOpen && (
+                                    <div className="absolute top-full left-0 right-0 mt-1 bg-dark-800 border border-dark-600 rounded-md shadow-xl overflow-hidden z-[100]">
+                                        {sourcePaths.map((path) => (
+                                            <button
+                                                key={path}
+                                                className="w-full text-left px-3 py-2 text-xs font-mono text-gray-300 hover:bg-primary-600/20 hover:text-white transition-colors truncate block"
+                                                onClick={() => {
+                                                    setSourcePath(path);
+                                                    setIsSourceDropdownOpen(false);
+                                                }}
+                                            >
+                                                {path}
+                                            </button>
+                                        ))}
+                                        <div className="border-t border-dark-700 px-3 py-1.5 bg-dark-900/50">
+                                            <span className="text-[10px] text-gray-500 italic">Type to edit manually...</span>
+                                        </div>
                                     </div>
+                                )}
+                            </div>
+                            {activeSource && (
+                                <div className="text-[10px] text-gray-500 font-mono px-1 flex items-center gap-1">
+                                    <span className="text-primary-500">✔ Active:</span> {activeSource}
                                 </div>
                             )}
                         </div>
-                    </div>
 
-                    {/* Sync Mode Dropdown */}
-                    <div className="flex-1 flex flex-col gap-1 max-w-[200px]">
-                        <div className="flex items-center gap-2 bg-dark-800 px-3 py-1.5 rounded-md border border-dark-700 focus-within:border-primary-500 transition-colors">
-                            <Settings2 className="w-4 h-4 text-gray-400" />
-                            <span className="text-xs text-gray-500 font-mono">Mode:</span>
-                            <select
-                                value={syncMode}
-                                onChange={(e) => setSyncMode(e.target.value)}
-                                className="bg-transparent border-none outline-none text-xs w-full text-white cursor-pointer"
-                            >
-                                <option value="update" className="bg-dark-800 text-gray-300">Update Existing</option>
-                                <option value="mirror" className="bg-dark-800 text-blue-300">Mirror Source (Default)</option>
-                                <option value="overwrite" className="bg-dark-800 text-red-300">Total Overwrite (Re-Copy)</option>
-                            </select>
+                        {/* Destination Input */}
+                        <div className="flex-1 flex flex-col gap-1">
+                            <div className="relative z-40">
+                                <div className="flex items-center gap-2 bg-dark-800 px-3 py-1.5 rounded-md border border-dark-700 focus-within:border-primary-500 transition-colors cursor-text"
+                                    onClick={() => setIsDestDropdownOpen(true)}
+                                >
+                                    <HardDrive className="w-4 h-4 text-gray-400" />
+                                    <span className="text-xs text-gray-500 font-mono flex-shrink-0">Dest:</span>
+                                    <input
+                                        type="text"
+                                        className="bg-transparent border-none outline-none text-sm w-full text-white placeholder-gray-500 font-mono"
+                                        placeholder="/path/to/destination"
+                                        value={destination}
+                                        onChange={(e) => setDestination(e.target.value)}
+                                        onFocus={() => setIsDestDropdownOpen(true)}
+                                        onBlur={() => setTimeout(() => setIsDestDropdownOpen(false), 200)}
+                                    />
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsDestDropdownOpen(!isDestDropdownOpen);
+                                        }}
+                                        className="text-gray-500 hover:text-white"
+                                    >
+                                        {isDestDropdownOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                    </button>
+                                </div>
+
+                                {/* Dropdown Options */}
+                                {isDestDropdownOpen && (
+                                    <div className="absolute top-full left-0 right-0 mt-1 bg-dark-800 border border-dark-600 rounded-md shadow-xl overflow-hidden z-[100]">
+                                        {destinationPaths.map((path) => (
+                                            <button
+                                                key={path}
+                                                className="w-full text-left px-3 py-2 text-xs font-mono text-gray-300 hover:bg-primary-600/20 hover:text-white transition-colors truncate block"
+                                                onClick={() => {
+                                                    setDestination(path);
+                                                    setIsDestDropdownOpen(false);
+                                                }}
+                                            >
+                                                {path}
+                                            </button>
+                                        ))}
+                                        <div className="border-t border-dark-700 px-3 py-1.5 bg-dark-900/50">
+                                            <span className="text-[10px] text-gray-500 italic">Type to edit manually...</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Sync Mode Dropdown */}
+                        <div className="flex-1 flex flex-col gap-1 max-w-[200px]">
+                            <div className="flex items-center gap-2 bg-dark-800 px-3 py-1.5 rounded-md border border-dark-700 focus-within:border-primary-500 transition-colors">
+                                <Settings2 className="w-4 h-4 text-gray-400" />
+                                <span className="text-xs text-gray-500 font-mono">Mode:</span>
+                                <select
+                                    value={syncMode}
+                                    onChange={(e) => setSyncMode(e.target.value)}
+                                    className="bg-transparent border-none outline-none text-xs w-full text-white cursor-pointer"
+                                >
+                                    <option value="update" className="bg-dark-800 text-gray-300">Update Existing</option>
+                                    <option value="mirror" className="bg-dark-800 text-blue-300">Mirror Source (Default)</option>
+                                    <option value="overwrite" className="bg-dark-800 text-red-300">Total Overwrite (Re-Copy)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>

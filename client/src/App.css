@@ -12,16 +12,11 @@ body {
   background-color: var(--bg);
   color: var(--text);
   height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
-.container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
+/* Old .container removed to allow full width sidebar layout */
 
 header {
   padding: 20px 0;
