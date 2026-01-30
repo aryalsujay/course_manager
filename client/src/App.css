@@ -1,0 +1,184 @@
+:root {
+  --primary: #646cff;
+  --bg: #f5f5f5;
+  --surface: #ffffff;
+  --text: #333;
+  --border: #ccc;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  height: 100vh;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+header {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+main {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  padding: 20px 0;
+  overflow: hidden;
+}
+
+.selection-panel {
+  flex: 1;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 20px;
+  overflow-y: auto;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.control-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.config-box, .status-box {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.status-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Enable flex scroll */
+}
+
+.course-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.course-item {
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding: 10px;
+}
+
+.course-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.badge {
+  background: #eee;
+  font-size: 0.8em;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.lang-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 5px;
+  padding-left: 20px;
+}
+
+.lang-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.start-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.start-btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+.logs {
+  flex: 1;
+  background: #1e1e1e;
+  color: #0f0;
+  font-family: monospace;
+  padding: 10px;
+  overflow-y: auto;
+  border-radius: 4px;
+  font-size: 0.85em;
+  white-space: pre-wrap;
+}
+
+.log-line {
+  margin-bottom: 2px;
+  word-break: break-all;
+}
+
+.progress-bar-container {
+  margin-bottom: 10px;
+  background: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  height: 20px;
+}
+
+.progress-bar {
+  background: var(--primary);
+  height: 100%;
+  transition: width 0.3s;
+}
+
+.progress-text {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  text-align: center;
+  line-height: 20px;
+  color: #333;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.current-task {
+  font-size: 0.9em;
+  margin-bottom: 5px;
+  color: #666;
+}
