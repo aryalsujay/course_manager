@@ -31,9 +31,8 @@ function startSync(sourcePath, { onLog, onExit }) {
     onLog(`📜 Script: ${scriptPath}`);
 
     // Spawn the shell script
-    // We pass sourcePath/media as the first argument
-    const mediaSourcePath = path.join(sourcePath, 'media');
-    currentProcess = spawn(scriptPath, [mediaSourcePath]);
+    // We pass sourcePath directly. The script handles 'media' subfolder detection.
+    currentProcess = spawn(scriptPath, [sourcePath]);
 
     currentProcess.stdout.on('data', (data) => {
         const lines = data.toString().split('\n');

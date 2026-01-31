@@ -124,6 +124,9 @@ app.get('/api/structure', async (req, res) => {
     }
 });
 
+// State for tracking last VCM destination
+let lastVcmDestination = null;
+
 // API: Start Copy Process
 app.post('/api/copy', (req, res) => {
     let { selections, destination, sourcePath, syncMode } = req.body;
@@ -142,6 +145,10 @@ app.post('/api/copy', (req, res) => {
     if (!destination.endsWith('media/vcm-s')) {
         destination = path.join(destination, 'media/vcm-s');
     }
+
+    // Save this destination for Tablet Sync
+    lastVcmDestination = destination;
+    console.log(`[VCM] Saved last destination for Tablet Sync: ${lastVcmDestination}`);
 
     if (!fs.existsSync(destination)) {
         try {
@@ -180,8 +187,10 @@ app.post('/api/stop', (req, res) => {
 app.post('/api/tablet-sync/start', (req, res) => {
     const { sourcePath } = req.body;
 
-    // Default if not provided
-    const textSource = sourcePath || '/Volumes/NK-Working/Dummy/media';
+    // Prioritize passed source, then last VCM dest, then legacy default
+    const textSource = sourcePath || lastVcmDestination || '/Volumes/NK-Working/Dummy/media';
+
+    console.log(`[TABLET-SYNC] Starting with source: ${textSource}`);
 
     const socket = io;
 
@@ -190,7 +199,7 @@ app.post('/api/tablet-sync/start', (req, res) => {
         onExit: (code) => socket.emit('tablet-complete', code)
     });
 
-    res.json({ message: "Tablet sync started" });
+    res.json({ message: "Tablet sync started", source: textSource });
 });
 
 app.post('/api/tablet-sync/stop', (req, res) => {
