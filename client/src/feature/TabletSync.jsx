@@ -7,6 +7,7 @@ import { cn } from '../lib/utils';
 export default function TabletSync({ initialSourcePath }) {
     const [sourcePath, setSourcePath] = useState(initialSourcePath || '/Volumes/NK-Working/Dummy');
     const [centerName, setCenterName] = useState('');
+    const [createWallpaper, setcreateWallpaper] = useState(true); // Default Yes
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [logs, setLogs] = useState([]);
     const [status, setStatus] = useState('idle'); // idle, running, error, complete
@@ -44,13 +45,25 @@ export default function TabletSync({ initialSourcePath }) {
     }, []);
 
     const startSync = async () => {
+        // Validation: If No Wallpaper selected but text exists
+        if (!createWallpaper && centerName.trim()) {
+            // User Warning as per request
+            // "If the user checks on no and also types text... provide a warning"
+            const proceed = window.confirm("⚠️ You have entered a Center Name but selected NOT to change the wallpaper.\n\nClick OK to proceed without changing wallpaper (ignoring text).\nClick Cancel to go back and select 'Yes'.");
+            if (!proceed) return;
+        }
+
         setLogs([]);
         setStatus('running');
         try {
             const res = await fetch('/api/tablet-sync/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sourcePath, centerName })
+                body: JSON.stringify({
+                    sourcePath,
+                    centerName: createWallpaper ? centerName : '', // Explicitly clear if skipping
+                    skipWallpaper: !createWallpaper
+                })
             });
             if (!res.ok) throw new Error("Failed to start sync");
         } catch (err) {
@@ -59,6 +72,8 @@ export default function TabletSync({ initialSourcePath }) {
             setLogs(prev => [...prev, `❌ Error starting sync: ${err.message}`]);
         }
     };
+
+    // ... (stopSync remains same)
 
     const stopSync = async () => {
         try {
@@ -131,16 +146,51 @@ export default function TabletSync({ initialSourcePath }) {
                         </div>
                     </div>
 
-                    <div className="flex-1 max-w-xs space-y-2">
-                        <label className="text-xs font-mono text-gray-500 uppercase tracking-wider">Center Name (Wallpaper)</label>
-                        <div className="flex items-center gap-2 bg-dark-800 px-4 py-3 rounded-lg border border-dark-700 hover:border-emerald-500/50 focus-within:border-emerald-500 transition-colors cursor-text group">
-                            <input
-                                type="text"
-                                className="bg-transparent border-none outline-none text-sm w-full text-white placeholder-gray-600"
-                                placeholder="e.g. D' Songadh - 4"
-                                value={centerName}
-                                onChange={(e) => setCenterName(e.target.value)}
-                            />
+                    <div className="flex-1 max-w-sm flex gap-4">
+                        {/* Wallpaper Toggle */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-mono text-gray-500 uppercase tracking-wider">Change Wallpaper?</label>
+                            <div className="flex bg-dark-800 rounded-lg p-1 border border-dark-700 h-[46px]">
+                                <button
+                                    onClick={() => setcreateWallpaper(true)}
+                                    className={cn(
+                                        "px-3 text-sm font-medium rounded-md transition-all flex-1",
+                                        createWallpaper ? "bg-emerald-600 text-white shadow" : "text-gray-400 hover:text-gray-200"
+                                    )}
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    onClick={() => setcreateWallpaper(false)}
+                                    className={cn(
+                                        "px-3 text-sm font-medium rounded-md transition-all flex-1",
+                                        !createWallpaper ? "bg-dark-600 text-white shadow" : "text-gray-400 hover:text-gray-200"
+                                    )}
+                                >
+                                    No
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Center Name Input */}
+                        <div className="flex-1 space-y-2">
+                            <label className="text-xs font-mono text-gray-500 uppercase tracking-wider">Center Name</label>
+                            <div className={cn(
+                                "flex items-center gap-2 bg-dark-800 px-4 py-3 rounded-lg border transition-colors cursor-text group h-[46px]",
+                                createWallpaper ? "border-dark-700 hover:border-emerald-500/50 focus-within:border-emerald-500" : "border-dark-800 opacity-50 cursor-not-allowed"
+                            )}>
+                                <input
+                                    type="text"
+                                    className={cn(
+                                        "bg-transparent border-none outline-none text-sm w-full placeholder-gray-600",
+                                        createWallpaper ? "text-white" : "text-gray-500 cursor-not-allowed"
+                                    )}
+                                    placeholder={createWallpaper ? "e.g. D' Songadh - 4" : "Skipping wallpaper..."}
+                                    value={centerName}
+                                    onChange={(e) => setCenterName(e.target.value)}
+                                    disabled={!createWallpaper}
+                                />
+                            </div>
                         </div>
                     </div>
 

@@ -264,6 +264,9 @@ export const useSyncState = (initialDestination) => {
     const getPayload = () => {
         const payload = { selections: {}, destination, sourcePath, syncMode };
 
+        // Check if any filtering is active globally
+        const hasGlobalSelection = selectedInstructions.size > 0 || selectedDiscourses.size > 0;
+
         selectedCourses.forEach(course => {
             const courseData = structure[course];
             if (!courseData) return;
@@ -287,16 +290,17 @@ export const useSyncState = (initialDestination) => {
             if (validInstructions.length > 0 || validDiscourses.length > 0) {
                 payload.selections[course] = {
                     instructions: validInstructions,
-                    discourses: validDiscourses
+                    discourses: validDiscourses,
+                    applyFilter: hasGlobalSelection // Should be true here anyway
                 };
             } else {
-                // If selected but no specific sub-items, send empty which implies "Default Behavior"
-                // Server logic:
-                // - dhamma-servers: Files Only
-                // - Others: Full Recursive Copy
+                // If selected but no specific sub-items:
+                // If hasGlobalSelection is TRUE, it means user wanted to filter but nothing matched -> Copy Nothing (applyFilter=true)
+                // If hasGlobalSelection is FALSE, it means user selected Course Only -> Copy Everything (applyFilter=false)
                 payload.selections[course] = {
                     instructions: [],
-                    discourses: []
+                    discourses: [],
+                    applyFilter: hasGlobalSelection
                 };
             }
         });

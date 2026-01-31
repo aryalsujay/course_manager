@@ -10,7 +10,7 @@ let currentProcess = null;
  * @param {Function} callbacks.onLog - Called with log lines.
  * @param {Function} callbacks.onExit - Called when process exits.
  */
-function startSync(sourcePath, { centerName, onLog, onExit }) {
+function startSync(sourcePath, { centerName, skipWallpaper, onLog, onExit }) {
     if (currentProcess) {
         onLog("⚠️ A sync process is already running.");
         return;
@@ -35,7 +35,11 @@ function startSync(sourcePath, { centerName, onLog, onExit }) {
     // Pass CENTER_NAME as an environment variable
     currentProcess = spawn(scriptPath, [sourcePath], {
         detached: true,
-        env: { ...process.env, CENTER_NAME: centerName || '' }
+        env: {
+            ...process.env,
+            CENTER_NAME: centerName || '',
+            SKIP_WALLPAPER: skipWallpaper ? 'true' : 'false'
+        }
     });
 
     currentProcess.stdout.on('data', (data) => {

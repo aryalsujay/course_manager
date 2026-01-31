@@ -185,7 +185,7 @@ app.post('/api/stop', (req, res) => {
 // --- TABLET SYNC API ---
 
 app.post('/api/tablet-sync/start', (req, res) => {
-    const { sourcePath, centerName } = req.body;
+    const { sourcePath, centerName, skipWallpaper } = req.body;
 
     // Prioritize passed source, then last VCM dest, then legacy default
     const textSource = sourcePath || lastVcmDestination || '/Volumes/NK-Working/Dummy/media';
@@ -196,6 +196,7 @@ app.post('/api/tablet-sync/start', (req, res) => {
 
     startSync(textSource, {
         centerName,
+        skipWallpaper,
         onLog: (msg) => socket.emit('tablet-log', msg),
         onExit: (code) => socket.emit('tablet-complete', code)
     });
@@ -258,8 +259,10 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
         }
 
         // [NEW] Handle Flat/Root Copy
+        // Only if NO specific items AND filter mode is NOT active (i.e. User selected Course ONLY)
         if ((!data.instructions || data.instructions.length === 0) &&
-            (!data.discourses || data.discourses.length === 0)) {
+            (!data.discourses || data.discourses.length === 0) &&
+            !data.applyFilter) {
 
             // Special Case: dhamma-servers -> Files Only
             if (courseType === 'dhamma-servers') {
