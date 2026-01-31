@@ -220,12 +220,24 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
         // [NEW] Handle Flat/Root Copy
         if ((!data.instructions || data.instructions.length === 0) &&
             (!data.discourses || data.discourses.length === 0)) {
-            tasks.push({
-                type: 'root_copy',
-                course: courseType,
-                item: 'ROOT',
-                relPath: courseType
-            });
+
+            // Special Case: dhamma-servers -> Files Only
+            if (courseType === 'dhamma-servers') {
+                tasks.push({
+                    type: 'root_files',
+                    course: courseType,
+                    item: 'ROOT_FILES',
+                    relPath: courseType
+                });
+            } else {
+                // Default Flat -> Recursive Copy
+                tasks.push({
+                    type: 'root_copy',
+                    course: courseType,
+                    item: 'ROOT',
+                    relPath: courseType
+                });
+            }
         } else {
             // [NEW] If structured selections exist, ALSO copy files in the course root
             tasks.push({
@@ -246,7 +258,8 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
 
     for (const task of tasks) {
         if (signal?.aborted) break;
-        const scanPath = path.join(rootSource, task.relPath);
+        const taskRelPath = task.sourceRelPath || task.relPath;
+        const scanPath = path.join(rootSource, taskRelPath);
         const stats = await scanDirectory(scanPath, { signal });
         totalFiles += stats.files;
         totalBytes += stats.bytes;
@@ -459,13 +472,14 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
         // Ensure parent dir exists
         fs.mkdirSync(path.dirname(targetPath), { recursive: true });
 
-        socket.emit('log', `Processing ${relPath}...`);
+        const displayPath = relPath || task.destRelPath || task.item || 'Unknown Item';
+        socket.emit('log', `Processing ${displayPath}...`);
 
         const onLog = (msg) => socket.emit('log', msg);
         const onProgress = (delta) => {
             copiedFiles += delta.files;
             copiedBytes += delta.bytes;
-            emitProgress(relPath);
+            emitProgress(displayPath);
         };
 
         /* const trackFile = (filePath) => {

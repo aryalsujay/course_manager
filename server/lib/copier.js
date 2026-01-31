@@ -99,8 +99,37 @@ async function copyRecursive(src, dest, options = {}) {
 
             if (!validDest) {
                 if (onLog) onLog(`> ${path.basename(dest)}`);
-                await fs.promises.copyFile(src, dest);
-                await fs.promises.utimes(dest, stats.atime, stats.mtime);
+
+                // Use Streams for cancelable copy
+                await new Promise((resolve, reject) => {
+                    const readStream = fs.createReadStream(src);
+                    const writeStream = fs.createWriteStream(dest);
+
+                    // Abort handling
+                    if (options.signal) {
+                        if (options.signal.aborted) {
+                            readStream.destroy();
+                            writeStream.destroy();
+                            return reject(new Error('Aborted by user'));
+                        }
+                        options.signal.addEventListener('abort', () => {
+                            readStream.destroy();
+                            writeStream.destroy();
+                            reject(new Error('Aborted by user'));
+                        }, { once: true });
+                    }
+
+                    readStream.on('error', reject);
+                    writeStream.on('error', reject);
+                    writeStream.on('finish', () => {
+                        // Restore timestamps
+                        fs.promises.utimes(dest, stats.atime, stats.mtime)
+                            .then(resolve)
+                            .catch(reject);
+                    });
+
+                    readStream.pipe(writeStream);
+                });
 
                 if (onProgress) onProgress({ files: 1, bytes: stats.size });
             } else {

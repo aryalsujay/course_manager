@@ -66,6 +66,8 @@ echo "👉 Choose Photos/Gallery → Set wallpaper (one tap)"
 SRC="${1:-/Volumes/NK-Working/Dummy}"
 DEST="/sdcard"
 
+echo "📂 Source Path: $SRC"
+
 [ -d "$SRC" ] || { echo "❌ Source media missing: $SRC"; exit 1; }
 
 adb shell mkdir -p /sdcard/media

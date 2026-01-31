@@ -26,8 +26,9 @@ function startSync(sourcePath, { onLog, onExit }) {
     onLog(`📜 Script: ${scriptPath}`);
 
     // Spawn the shell script
-    // We pass sourcePath as the first argument
-    currentProcess = spawn(scriptPath, [sourcePath]);
+    // We pass sourcePath/media as the first argument
+    const mediaSourcePath = path.join(sourcePath, 'media');
+    currentProcess = spawn(scriptPath, [mediaSourcePath]);
 
     currentProcess.stdout.on('data', (data) => {
         const lines = data.toString().split('\n');

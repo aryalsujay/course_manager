@@ -11,7 +11,12 @@ export const useSyncState = (initialDestination) => {
     const [allDiscourses, setAllDiscourses] = useState([]);
 
     // Selections (Global)
-    const [selectedCourses, setSelectedCourses] = useState(new Set());
+    const [selectedCourses, setSelectedCourses] = useState(new Set([
+        'common-general',
+        'common-lang',
+        'group-sittings',
+        'dhamma-servers'
+    ]));
     const [selectedInstructions, setSelectedInstructions] = useState(new Set());
     const [selectedDiscourses, setSelectedDiscourses] = useState(new Set());
     const [activeSource, setActiveSource] = useState(''); // Confirmed source from backend
