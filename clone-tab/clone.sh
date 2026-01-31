@@ -71,12 +71,22 @@ SRC="${1:-/Volumes/NK-Working/Dummy}"
 echo "📂 Source Path: $SRC"
 
 # Determine Sync Paths
-# If the source folder contains a 'media' subdirectory, we sync that.
-# Otherwise, we assume the source *is* the media content.
-if [ -d "$SRC/media" ]; then
+# Standardize path to remove trailing slashes for regex check
+SRC="${SRC%/}"
+
+# Logic to preserve 'vcm-s' structure
+# If input is '.../media/vcm-s', we want to sync from '.../media'.
+# This ensures 'vcm-s' folder itself is copied to '/sdcard/media/vcm-s'.
+if [[ "$SRC" == *"vcm-s" ]]; then
+    SYNC_SRC="$(dirname "$SRC")"
+    SYNC_DEST="/sdcard/media"
+    echo "ℹ️  Source ends in 'vcm-s'. Stepping up to parent: $SYNC_SRC"
+    echo "    (This ensures vcm-s folder is preserved on tablet)"
+
+elif [ -d "$SRC/media" ]; then
     SYNC_SRC="$SRC/media"
     SYNC_DEST="/sdcard/media"
-    echo "ℹ️  Found 'media' subfolder. Syncing subfolder to /sdcard/media"
+    echo "ℹ️  Found 'media' subfolder. Syncing subfolder content to /sdcard/media"
 else
     SYNC_SRC="$SRC"
     SYNC_DEST="/sdcard/media"
@@ -85,39 +95,35 @@ fi
 
 # ---------------------------------------------------
 # SYNC LOGIC: Conditional Mirroring
-# Case A: Fresh -> Copy 'media' folder to /sdcard root.
-# Case B: Existing -> Update contents of /sdcard/media.
+# STRATEGY: Enter source dir and sync "." to avoid path nesting issues.
 # ---------------------------------------------------
 
 # Check if /sdcard/media exists on the tablet
 if adb shell "[ -d '/sdcard/media' ]"; then
-    # CASE B: Existing Tablet -> MIRROR (Update + Delete)
-    # We target the EXISTING folder to update its contents.
-    echo "ℹ️  Found existing '/sdcard/media'. Performin Update (Mirror)..."
+    echo "ℹ️  Found existing '/sdcard/media'. Performing Update (Mirror)..."
     
-    # SAFTY CHECK: Ensure we are deleting inside media
-    DEST_PATH="/sdcard/media"
-    
-    # If SYNC_SRC ends in 'media', we need to sync its CONTENTS to DEST_PATH.
-    # adb-sync src dest -> copies files from src to dest.
-    # So adb-sync .../media /sdcard/media works perfectly.
-
-    adb-sync --delete "$SYNC_SRC" "$DEST_PATH"
+    # CASE B: Existing Tablet -> MIRROR
+    # Sync CONTENTS of SYNC_SRC to /sdcard/media
+    (
+        cd "$SYNC_SRC"
+        echo "📂 Changing dir to source: $(pwd)"
+        adb-sync --delete . "/sdcard/media"
+    )
 
 else
-    # CASE A: Fresh Tablet -> COPY ONLY
-    # We target /sdcard root so that the 'media' folder from source is copied there.
     echo "ℹ️  '/sdcard/media' not found. Performing Fresh Copy..."
     
-    # SAFTY CHECK: Destination is Root, but NO DELETE flag is used.
-    # We expect SYNC_SRC to be the 'media' folder itself.
-    
-    # If SYNC_SRC is '.../media', copying to /sdcard creates '/sdcard/media'.
-    
-    adb-sync "$SYNC_SRC" "/sdcard"
+    # CASE A: Fresh Tablet -> COPY ONLY
+    # Create dest first, then sync contents
+    adb shell mkdir -p "/sdcard/media"
+    (
+        cd "$SYNC_SRC"
+        echo "📂 Changing dir to source: $(pwd)"
+        adb-sync . "/sdcard/media"
+    )
 fi
 
 echo "=============================="
 echo "Clone completed: $(date)"
 echo "Log: $LOG_FILE"
-
+echo "=============================="
