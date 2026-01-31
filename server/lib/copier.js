@@ -24,15 +24,20 @@ async function scanDirectory(src, options = {}) {
 
         if (stats.isDirectory()) {
             const entries = await fs.promises.readdir(src);
-            for (const entry of entries) {
-                if (options.signal?.aborted) break;
+            const results = await Promise.all(entries.map(async (entry) => {
+                if (options.signal?.aborted) return { files: 0, bytes: 0 };
                 // Skip hidden/temp
-                if (entry === '.DS_Store' || entry === 'Thumbs.db' || entry.endsWith('.tmp')) continue;
+                if (entry === '.DS_Store' || entry === 'Thumbs.db' || entry.endsWith('.tmp')) {
+                    return { files: 0, bytes: 0 };
+                }
 
                 const childSrc = path.join(src, entry);
-                const childStats = await scanDirectory(childSrc, options);
-                files += childStats.files;
-                bytes += childStats.bytes;
+                return scanDirectory(childSrc, options);
+            }));
+
+            for (const res of results) {
+                files += res.files;
+                bytes += res.bytes;
             }
         } else if (stats.isFile()) {
             files = 1;

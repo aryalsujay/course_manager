@@ -40,21 +40,35 @@ console.log(`Using Source Root: ${SOURCE_ROOT}`);
 app.use(cors());
 app.use(express.json());
 
-// API: Get Directory Structure
-app.get('/api/structure', (req, res) => {
+// Cache for structure
+let cachedStructure = null;
+let lastCacheTime = 0;
+const CACHE_TTL = 10 * 60 * 1000; // 10 Minutes
+
+// API: Get Directory Structure (Async + Cached)
+app.get('/api/structure', async (req, res) => {
     try {
         const sourcePath = req.query.sourcePath || SOURCE_ROOT;
+        const forceRefresh = req.query.force === 'true';
 
-        console.log(`Reading from: ${sourcePath}`);
+        console.log(`Reading from: ${sourcePath} (Force: ${forceRefresh})`);
 
         if (!fs.existsSync(sourcePath)) {
             return res.status(404).json({ error: "Source directory not found" });
         }
 
-        const structure = {};
-        const entires = fs.readdirSync(sourcePath, { withFileTypes: true });
+        // Return Cache if valid
+        const now = Date.now();
+        if (!forceRefresh && cachedStructure && (now - lastCacheTime < CACHE_TTL)) {
+            console.log('Serving from cache');
+            return res.json(cachedStructure);
+        }
 
-        entires.forEach(entry => {
+        const structure = {};
+        const entries = await fs.promises.readdir(sourcePath, { withFileTypes: true });
+
+        // Process top-level inputs (Course Types) in parallel
+        await Promise.all(entries.map(async (entry) => {
             if (entry.isDirectory()) {
                 const courseType = entry.name;
                 const coursePath = path.join(sourcePath, courseType);
@@ -64,30 +78,46 @@ app.get('/api/structure', (req, res) => {
                     discourses: []
                 };
 
-                // Read contents of course type
-                const items = fs.readdirSync(coursePath, { withFileTypes: true });
+                try {
+                    // Read contents of course type
+                    const items = await fs.promises.readdir(coursePath, { withFileTypes: true });
 
-                items.forEach(item => {
-                    if (item.isDirectory()) {
-                        if (item.name === 'Discourses') {
-                            // Read languages inside Discourses
-                            const discoursePath = path.join(coursePath, 'Discourses');
-                            const discourseItems = fs.readdirSync(discoursePath, { withFileTypes: true });
-                            courseData.discourses = discourseItems
-                                .filter(d => d.isDirectory() && !d.name.startsWith('.'))
-                                .map(d => d.name);
-                        } else if (!item.name.startsWith('.')) {
-                            // It's an instruction set
-                            courseData.instructions.push(item.name);
+                    // Process sub-folders in parallel (not strictly necessary but consistent)
+                    // We just need to iterate names.
+                    for (const item of items) {
+                        if (item.isDirectory()) {
+                            if (item.name === 'Discourses') {
+                                // Read languages inside Discourses
+                                const discoursePath = path.join(coursePath, 'Discourses');
+                                try {
+                                    const discourseItems = await fs.promises.readdir(discoursePath, { withFileTypes: true });
+                                    courseData.discourses = discourseItems
+                                        .filter(d => d.isDirectory() && !d.name.startsWith('.'))
+                                        .map(d => d.name);
+                                } catch (e) {
+                                    console.warn(`Failed to read discourses for ${courseType}`, e);
+                                }
+                            } else if (!item.name.startsWith('.')) {
+                                // It's an instruction set
+                                courseData.instructions.push(item.name);
+                            }
                         }
                     }
-                });
 
-                structure[courseType] = courseData;
+                    structure[courseType] = courseData;
+                } catch (err) {
+                    console.warn(`Skipping ${courseType}: ${err.message}`);
+                }
             }
-        });
+        }));
 
-        res.json({ structure, sourcePath });
+        const responseData = { structure, sourcePath };
+
+        // Update Cache
+        cachedStructure = responseData;
+        lastCacheTime = now;
+
+        res.json(responseData);
     } catch (error) {
         console.error("Error reading structure:", error);
         res.status(500).json({ error: error.message });
@@ -256,11 +286,14 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
     let totalFiles = 0;
     let totalBytes = 0;
 
-    for (const task of tasks) {
-        if (signal?.aborted) break;
+    const scanResults = await Promise.all(tasks.map(async (task) => {
+        if (signal?.aborted) return { files: 0, bytes: 0 };
         const taskRelPath = task.sourceRelPath || task.relPath;
         const scanPath = path.join(rootSource, taskRelPath);
-        const stats = await scanDirectory(scanPath, { signal });
+        return scanDirectory(scanPath, { signal });
+    }));
+
+    for (const stats of scanResults) {
         totalFiles += stats.files;
         totalBytes += stats.bytes;
     }
@@ -411,7 +444,14 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
 
                             // If flat mode (no selections), treat everything as selected (Mirror full folder)
                             const isFlatMode = courseSelections.instructions.length === 0 && courseSelections.discourses.length === 0;
-                            const isSelected = isFlatMode ? true : courseSelections.instructions.includes(entry.name);
+                            let isSelected = isFlatMode ? true : courseSelections.instructions.includes(entry.name);
+
+                            // SPECIAL CASE: dhamma-servers (Files Only by default)
+                            // If user selected nothing (Flat Mode), we do NOT want to select subfolders.
+                            // We only want files. So force isSelected = false for directories.
+                            if (course === 'dhamma-servers' && isFlatMode && entry.isDirectory()) {
+                                isSelected = false;
+                            }
 
                             if (!inSource || !isSelected) {
                                 fs.rmSync(entryPath, { recursive: true, force: true });
@@ -504,6 +544,9 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
             } else if (task.type === 'root_files') {
                 // Copy only FILES in the directory, ignore subdirectories
                 if (fs.existsSync(sourcePath)) {
+                    // Ensure target directory exists for root files copy
+                    fs.mkdirSync(targetPath, { recursive: true });
+
                     const entries = fs.readdirSync(sourcePath, { withFileTypes: true });
                     for (const entry of entries) {
                         if (entry.isFile() && !['.DS_Store', 'Thumbs.db'].includes(entry.name)) {
