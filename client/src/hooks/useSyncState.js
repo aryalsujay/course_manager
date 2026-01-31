@@ -284,6 +284,13 @@ export const useSyncState = (initialDestination) => {
                     instructions: validInstructions,
                     discourses: validDiscourses
                 };
+            } else if (courseData.instructions.length === 0 && courseData.discourses.length === 0) {
+                // "Flat" folder (e.g., common-general) with no recognized structure
+                // We send it with empty arrays, and server will interpret this as "Copy Root"
+                payload.selections[course] = {
+                    instructions: [],
+                    discourses: []
+                };
             }
         });
         return payload;

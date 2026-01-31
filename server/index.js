@@ -83,9 +83,7 @@ app.get('/api/structure', (req, res) => {
                     }
                 });
 
-                if (courseData.instructions.length > 0 || courseData.discourses.length > 0) {
-                    structure[courseType] = courseData;
-                }
+                structure[courseType] = courseData;
             }
         });
 
@@ -207,6 +205,17 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
                     relPath: path.join(courseType, 'Discourses', disc)
                 });
             }
+        }
+
+        // [NEW] Handle Flat/Root Copy
+        if ((!data.instructions || data.instructions.length === 0) &&
+            (!data.discourses || data.discourses.length === 0)) {
+            tasks.push({
+                type: 'root_copy',
+                course: courseType,
+                item: 'ROOT',
+                relPath: courseType
+            });
         }
     }
 
@@ -349,7 +358,10 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
                                         // Check validity: In Source? In Selection?
                                         const sourceDiscPath = path.join(rootSource, course, 'Discourses', disc.name);
                                         const inSource = fs.existsSync(sourceDiscPath);
-                                        const isSelected = courseSelections.discourses.includes(disc.name);
+
+                                        // If flat mode, allow all discourses
+                                        const isFlatMode = courseSelections.instructions.length === 0 && courseSelections.discourses.length === 0;
+                                        const isSelected = isFlatMode ? true : courseSelections.discourses.includes(disc.name);
 
                                         if (!inSource || !isSelected) {
                                             fs.rmSync(discPath, { recursive: true, force: true });
@@ -365,7 +377,10 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
                             // Handle Instructions (Folders at root of Course)
                             const sourceInstPath = path.join(rootSource, course, entry.name);
                             const inSource = fs.existsSync(sourceInstPath);
-                            const isSelected = courseSelections.instructions.includes(entry.name);
+
+                            // If flat mode (no selections), treat everything as selected (Mirror full folder)
+                            const isFlatMode = courseSelections.instructions.length === 0 && courseSelections.discourses.length === 0;
+                            const isSelected = isFlatMode ? true : courseSelections.instructions.includes(entry.name);
 
                             if (!inSource || !isSelected) {
                                 fs.rmSync(entryPath, { recursive: true, force: true });

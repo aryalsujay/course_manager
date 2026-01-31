@@ -63,7 +63,7 @@ export default function SyncDashboard({ onDestinationChange, initialDestination 
     ];
 
 
-    // Filtering logic
+    // Filter logic moved inline or kept as is
     const filteredInstructions = allInstructions.filter(i => i.toLowerCase().includes(instSearch.toLowerCase()));
     const filteredDiscourses = allDiscourses.filter(d => d.toLowerCase().includes(discSearch.toLowerCase()));
 
@@ -107,52 +107,6 @@ export default function SyncDashboard({ onDestinationChange, initialDestination 
     };
 
     const handleSelectNoneDiscourses = () => setSelectedDiscourses(new Set());
-
-
-    const ColumnHeader = ({ title, count, total, onSelectAll, onSelectNone }) => (
-        <div className="flex items-center justify-between p-4 border-b border-dark-700 bg-dark-800/50 sticky top-0 z-10 backdrop-blur">
-            <h3 className="font-semibold text-white">{title}</h3>
-            <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">{count}/{total}</span>
-                <div className="flex items-center gap-1">
-                    {onSelectAll && (
-                        <button onClick={onSelectAll} className="text-[10px] text-primary-500 hover:text-primary-400 font-medium px-1">
-                            ALL
-                        </button>
-                    )}
-                    {onSelectNone && (
-                        <button onClick={onSelectNone} className="text-[10px] text-gray-500 hover:text-gray-300 font-medium px-1">
-                            NONE
-                        </button>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-
-    const SearchInput = ({ value, onChange, placeholder }) => (
-        <div className="p-2 border-b border-dark-700 bg-dark-900/50 sticky top-[57px] z-10">
-            <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-                <input
-                    type="text"
-                    placeholder={placeholder}
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    className="w-full bg-dark-800 border border-dark-700 rounded text-sm py-2 pl-8 pr-8 text-white focus:outline-none focus:border-primary-600 placeholder-gray-600"
-                />
-                {value && (
-                    <button
-                        onClick={() => onChange('')}
-                        className="absolute right-2 top-2.5 text-gray-500 hover:text-white"
-                        aria-label="Clear search"
-                    >
-                        ✕
-                    </button>
-                )}
-            </div>
-        </div>
-    );
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden bg-dark-900 text-gray-200 font-sans">
@@ -460,3 +414,48 @@ export default function SyncDashboard({ onDestinationChange, initialDestination 
 // I need to make sure clearCourses is available or fix the prop usage
 // In previous steps I exported it. I will assume it's there.
 // If I missed exporting clearCourses in useSyncState, I'll fix it in verification.
+
+const ColumnHeader = ({ title, count, total, onSelectAll, onSelectNone }) => (
+    <div className="flex items-center justify-between p-4 border-b border-dark-700 bg-dark-800/50 sticky top-0 z-10 backdrop-blur">
+        <h3 className="font-semibold text-white">{title}</h3>
+        <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">{count}/{total}</span>
+            <div className="flex items-center gap-1">
+                {onSelectAll && (
+                    <button onClick={onSelectAll} className="text-[10px] text-primary-500 hover:text-primary-400 font-medium px-1">
+                        ALL
+                    </button>
+                )}
+                {onSelectNone && (
+                    <button onClick={onSelectNone} className="text-[10px] text-gray-500 hover:text-gray-300 font-medium px-1">
+                        NONE
+                    </button>
+                )}
+            </div>
+        </div>
+    </div>
+);
+
+const SearchInput = ({ value, onChange, placeholder }) => (
+    <div className="p-2 border-b border-dark-700 bg-dark-900/50 sticky top-[57px] z-10">
+        <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+            <input
+                type="text"
+                placeholder={placeholder}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full bg-dark-800 border border-dark-700 rounded text-sm py-2 pl-8 pr-8 text-white focus:outline-none focus:border-primary-600 placeholder-gray-600"
+            />
+            {value && (
+                <button
+                    onClick={() => onChange('')}
+                    className="absolute right-2 top-2.5 text-gray-500 hover:text-white"
+                    aria-label="Clear search"
+                >
+                    ✕
+                </button>
+            )}
+        </div>
+    </div>
+);
