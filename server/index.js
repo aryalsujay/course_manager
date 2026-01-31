@@ -185,7 +185,7 @@ app.post('/api/stop', (req, res) => {
 // --- TABLET SYNC API ---
 
 app.post('/api/tablet-sync/start', (req, res) => {
-    const { sourcePath } = req.body;
+    const { sourcePath, centerName } = req.body;
 
     // Prioritize passed source, then last VCM dest, then legacy default
     const textSource = sourcePath || lastVcmDestination || '/Volumes/NK-Working/Dummy/media';
@@ -195,6 +195,7 @@ app.post('/api/tablet-sync/start', (req, res) => {
     const socket = io;
 
     startSync(textSource, {
+        centerName,
         onLog: (msg) => socket.emit('tablet-log', msg),
         onExit: (code) => socket.emit('tablet-complete', code)
     });

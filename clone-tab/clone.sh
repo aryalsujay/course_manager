@@ -45,9 +45,23 @@ adb shell settings put global development_settings_enabled 1
 adb shell locksettings clear || true
 
 # WALLPAPER (WORKING METHOD)
-WALL_LOCAL="$SCRIPT_DIR/pagoda.jpg"
+# Prompt for center name to overlay on wallpaper if not provided via env
+if [ -z "$CENTER_NAME" ]; then
+    read -p "Enter Center Name (e.g. D' Songadh - 4) [Enter to skip]: " CENTER_NAME
+fi
+
+if [ -n "$CENTER_NAME" ]; then
+    echo "🎨 Generating custom wallpaper for: $CENTER_NAME"
+    # Ensure pagoda.jpg exists
+    [ -f "$SCRIPT_DIR/pagoda.jpg" ] || { echo "❌ pagoda.jpg missing"; exit 1; }
+    node "$SCRIPT_DIR/../scripts/create_wallpaper.js" "$CENTER_NAME" "$SCRIPT_DIR/pagoda.jpg" "$SCRIPT_DIR/generated_wallpaper.jpg"
+    WALL_LOCAL="$SCRIPT_DIR/generated_wallpaper.jpg"
+else
+    WALL_LOCAL="$SCRIPT_DIR/pagoda.jpg"
+fi
+
 WALL_REMOTE="/sdcard/pagoda.jpg"
-[ -f "$WALL_LOCAL" ] || { echo "❌ pagoda.jpg missing"; exit 1; }
+[ -f "$WALL_LOCAL" ] || { echo "❌ Wallpaper file missing: $WALL_LOCAL"; exit 1; }
 
 # Check if remote file exists and calculate hash
 NEED_WALLPAPER=true

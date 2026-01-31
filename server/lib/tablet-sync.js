@@ -10,7 +10,7 @@ let currentProcess = null;
  * @param {Function} callbacks.onLog - Called with log lines.
  * @param {Function} callbacks.onExit - Called when process exits.
  */
-function startSync(sourcePath, { onLog, onExit }) {
+function startSync(sourcePath, { centerName, onLog, onExit }) {
     if (currentProcess) {
         onLog("⚠️ A sync process is already running.");
         return;
@@ -28,14 +28,15 @@ function startSync(sourcePath, { onLog, onExit }) {
 
     onLog(`🚀 Starting Tablet Sync...`);
     onLog(`📂 Source: ${sourcePath}`);
+    if (centerName) onLog(`🎨 Center Name: ${centerName}`);
     onLog(`📜 Script: ${scriptPath}`);
 
     // Spawn the shell script
-    // We pass sourcePath directly. The script handles 'media' subfolder detection.
-    // Spawn the shell script
-    // We pass sourcePath directly. The script handles 'media' subfolder detection.
-    // Detached: true creates a new process group so we can kill the whole tree.
-    currentProcess = spawn(scriptPath, [sourcePath], { detached: true });
+    // Pass CENTER_NAME as an environment variable
+    currentProcess = spawn(scriptPath, [sourcePath], {
+        detached: true,
+        env: { ...process.env, CENTER_NAME: centerName || '' }
+    });
 
     currentProcess.stdout.on('data', (data) => {
         const lines = data.toString().split('\n');

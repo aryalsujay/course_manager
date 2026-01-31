@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 
 export default function TabletSync({ initialSourcePath }) {
     const [sourcePath, setSourcePath] = useState(initialSourcePath || '/Volumes/NK-Working/Dummy');
+    const [centerName, setCenterName] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [logs, setLogs] = useState([]);
     const [status, setStatus] = useState('idle'); // idle, running, error, complete
@@ -49,7 +50,7 @@ export default function TabletSync({ initialSourcePath }) {
             const res = await fetch('/api/tablet-sync/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sourcePath })
+                body: JSON.stringify({ sourcePath, centerName })
             });
             if (!res.ok) throw new Error("Failed to start sync");
         } catch (err) {
@@ -127,6 +128,19 @@ export default function TabletSync({ initialSourcePath }) {
                                     ))}
                                 </div>
                             )}
+                        </div>
+                    </div>
+
+                    <div className="flex-1 max-w-xs space-y-2">
+                        <label className="text-xs font-mono text-gray-500 uppercase tracking-wider">Center Name (Wallpaper)</label>
+                        <div className="flex items-center gap-2 bg-dark-800 px-4 py-3 rounded-lg border border-dark-700 hover:border-emerald-500/50 focus-within:border-emerald-500 transition-colors cursor-text group">
+                            <input
+                                type="text"
+                                className="bg-transparent border-none outline-none text-sm w-full text-white placeholder-gray-600"
+                                placeholder="e.g. D' Songadh - 4"
+                                value={centerName}
+                                onChange={(e) => setCenterName(e.target.value)}
+                            />
                         </div>
                     </div>
 
