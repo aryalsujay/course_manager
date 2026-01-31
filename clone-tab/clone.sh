@@ -49,17 +49,34 @@ WALL_LOCAL="$SCRIPT_DIR/pagoda.jpg"
 WALL_REMOTE="/sdcard/pagoda.jpg"
 [ -f "$WALL_LOCAL" ] || { echo "❌ pagoda.jpg missing"; exit 1; }
 
-adb push "$WALL_LOCAL" "$WALL_REMOTE"
-adb shell am broadcast \
-  -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
-  -d "file://$WALL_REMOTE"
+# Check if remote file exists and calculate hash
+NEED_WALLPAPER=true
+if adb shell "[ -f '$WALL_REMOTE' ]"; then
+    # Calculate md5sums (awk to get just the hash)
+    LOCAL_SUM=$(md5 -q "$WALL_LOCAL" 2>/dev/null || md5sum "$WALL_LOCAL" | awk '{print $1}')
+    # Android md5sum output: "hash  filename"
+    REMOTE_SUM=$(adb shell md5sum "$WALL_REMOTE" | awk '{print $1}')
+    
+    if [ "$LOCAL_SUM" == "$REMOTE_SUM" ]; then
+        echo "✅ Wallpaper already set (Hash Match). Skipping setup."
+        NEED_WALLPAPER=false
+    fi
+fi
 
-adb shell am start \
-  -a android.intent.action.ATTACH_DATA \
-  -d "file://$WALL_REMOTE" \
-  -t "image/jpeg"
-
-echo "👉 Choose Photos/Gallery → Set wallpaper (one tap)"
+if [ "$NEED_WALLPAPER" = true ]; then
+    echo "🎨 Setting Wallpaper..."
+    adb push "$WALL_LOCAL" "$WALL_REMOTE"
+    adb shell am broadcast \
+      -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+      -d "file://$WALL_REMOTE"
+    
+    adb shell am start \
+      -a android.intent.action.ATTACH_DATA \
+      -d "file://$WALL_REMOTE" \
+      -t "image/jpeg"
+      
+    echo "👉 Choose Photos/Gallery → Set wallpaper (one tap)"
+fi
 
 # ---------------- MEDIA COPY (FIXED) ----------------
 # Use first argument as source if provided, else default

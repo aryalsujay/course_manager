@@ -32,7 +32,10 @@ function startSync(sourcePath, { onLog, onExit }) {
 
     // Spawn the shell script
     // We pass sourcePath directly. The script handles 'media' subfolder detection.
-    currentProcess = spawn(scriptPath, [sourcePath]);
+    // Spawn the shell script
+    // We pass sourcePath directly. The script handles 'media' subfolder detection.
+    // Detached: true creates a new process group so we can kill the whole tree.
+    currentProcess = spawn(scriptPath, [sourcePath], { detached: true });
 
     currentProcess.stdout.on('data', (data) => {
         const lines = data.toString().split('\n');
@@ -65,8 +68,14 @@ function startSync(sourcePath, { onLog, onExit }) {
  * Stops the current sync process if running.
  */
 function stopSync() {
-    if (currentProcess) {
-        currentProcess.kill(); // SIGTERM
+    if (currentProcess && currentProcess.pid) {
+        try {
+            // Kill the process group (negative PID) to kill script AND children (adb-sync)
+            process.kill(-currentProcess.pid, 'SIGTERM');
+        } catch (e) {
+            // Fallback if Detached failed or method unsupported
+            currentProcess.kill();
+        }
         currentProcess = null;
         return true;
     }
