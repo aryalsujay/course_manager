@@ -18,8 +18,13 @@ function startSync(sourcePath, { onLog, onExit }) {
 
     const scriptPath = path.resolve(__dirname, '../../clone-tab/clone.sh');
 
+    const fs = require('fs');
     // Ensure the script is executable
-    // (In a real deployment you might want to chmod it explicitly or assume it is)
+    try {
+        fs.chmodSync(scriptPath, '755');
+    } catch (e) {
+        onLog(`⚠️ Warning: Could not chmod script: ${e.message}`);
+    }
 
     onLog(`🚀 Starting Tablet Sync...`);
     onLog(`📂 Source: ${sourcePath}`);
