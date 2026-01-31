@@ -176,6 +176,16 @@ app.post('/api/tablet-sync/stop', (req, res) => {
 async function processCopy(selections, destination, rootSource, signal, syncMode) {
     const socket = io;
     const tasks = [];
+
+    // [NEW] Always copy Pagoda Image if it exists
+    tasks.push({
+        type: 'single_file',
+        course: 'ROOT',
+        item: 'Pagoda Image',
+        sourceRelPath: 'Pagoda Dummy.jpg',
+        destRelPath: 'pagoda.jpg'
+    });
+
     // const touchedPaths = new Set(); // Removed: Old Mirror Logic
 
     // Determine scopes for Overwrite/Mirror
@@ -214,6 +224,14 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
                 type: 'root_copy',
                 course: courseType,
                 item: 'ROOT',
+                relPath: courseType
+            });
+        } else {
+            // [NEW] If structured selections exist, ALSO copy files in the course root
+            tasks.push({
+                type: 'root_files',
+                course: courseType,
+                item: 'ROOT_FILES',
                 relPath: courseType
             });
         }
@@ -434,8 +452,9 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
         }
 
         const { course, item, relPath } = task;
-        const sourcePath = path.join(rootSource, relPath);
-        const targetPath = path.join(destination, relPath);
+        // Handle different path structures
+        const sourcePath = task.sourceRelPath ? path.join(rootSource, task.sourceRelPath) : path.join(rootSource, relPath);
+        const targetPath = task.destRelPath ? path.join(destination, task.destRelPath) : path.join(destination, relPath);
 
         // Ensure parent dir exists
         fs.mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -458,7 +477,34 @@ async function processCopy(selections, destination, rootSource, signal, syncMode
         }; */
 
         try {
-            await copyRecursive(sourcePath, targetPath, { onLog, onProgress, signal });
+            if (task.type === 'single_file') {
+                // Handle single file copy (Pagoda)
+                if (fs.existsSync(sourcePath)) {
+                    fs.copyFileSync(sourcePath, targetPath);
+                    copiedFiles++; // Count as 1 file
+                    // copiedBytes += fs.statSync(sourcePath).size; // Simplify byte counting for single file
+                    emitProgress(task.destRelPath);
+                } else {
+                    socket.emit('log', `⚠️ Skipped: ${task.sourceRelPath} not found.`);
+                }
+            } else if (task.type === 'root_files') {
+                // Copy only FILES in the directory, ignore subdirectories
+                if (fs.existsSync(sourcePath)) {
+                    const entries = fs.readdirSync(sourcePath, { withFileTypes: true });
+                    for (const entry of entries) {
+                        if (entry.isFile() && !['.DS_Store', 'Thumbs.db'].includes(entry.name)) {
+                            const srcFile = path.join(sourcePath, entry.name);
+                            const destFile = path.join(targetPath, entry.name);
+                            fs.copyFileSync(srcFile, destFile);
+                            // emitProgress(path.join(relPath, entry.name)); // Optional: emit for every file
+                        }
+                    }
+                    socket.emit('log', `📄 Copied root files for ${course}`);
+                }
+            } else {
+                // Standard Recursive Copy
+                await copyRecursive(sourcePath, targetPath, { onLog, onProgress, signal });
+            }
         } catch (err) {
             if (signal?.aborted || err.message === 'Aborted by user') {
                 socket.emit('log', '🛑 Process stopped by user.');
