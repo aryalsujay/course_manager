@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { cn } from '../lib/utils';
 import { Play, CheckCircle, HardDrive, Check, Search, RefreshCw, AlertCircle, FolderInput, ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
 import CopyProgress from './CopyProgress';
+import aniwheel from '../assets/aniwheel.gif';
 
 export default function SyncDashboard({ onDestinationChange, initialDestination }) {
     const {
@@ -115,7 +116,9 @@ export default function SyncDashboard({ onDestinationChange, initialDestination 
                 <div className="max-w-[1600px] mx-auto w-full p-4 pl-6 flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <span className="w-8 h-8 rounded bg-primary-600 flex items-center justify-center text-white font-bold shadow-lg shadow-primary-900/20">V</span>
+                            <div className="w-10 h-10 flex items-center justify-center bg-dark-800/50 rounded-full border border-dark-700">
+                                <HardDrive className="w-5 h-5 text-gray-400" />
+                            </div>
                             <h1 className="text-xl font-bold tracking-tight text-white">VCM Sync</h1>
                             <button
                                 onClick={refreshData}

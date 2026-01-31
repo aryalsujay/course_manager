@@ -2,14 +2,16 @@ const { Jimp, loadFont, measureText } = require('jimp');
 const { SANS_64_WHITE } = require('jimp/fonts');
 const path = require('path');
 
-const text = process.argv[2];
-const inputPath = process.argv[3];
-const outputPath = process.argv[4];
+const [text, inputPath, outputPath] = process.argv.slice(2);
 
 if (!text || !inputPath || !outputPath) {
     console.error('Usage: node create_wallpaper.js <text> <inputPath> <outputPath>');
     process.exit(1);
 }
+
+console.log(`🎨 Creating wallpaper: "${text}"`);
+console.log(`📂 Input: ${inputPath}`);
+console.log(`📂 Output: ${outputPath}`);
 
 async function createWallpaper() {
     try {

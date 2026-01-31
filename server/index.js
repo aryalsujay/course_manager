@@ -190,7 +190,7 @@ app.post('/api/tablet-sync/start', (req, res) => {
     // Prioritize passed source, then last VCM dest, then legacy default
     const textSource = sourcePath || lastVcmDestination || '/Volumes/NK-Working/Dummy/media';
 
-    console.log(`[TABLET-SYNC] Starting with source: ${textSource}`);
+    console.log(`[TABLET-SYNC] Starting with source: ${textSource}, centerName: ${centerName || 'None'}`);
 
     const socket = io;
 

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import SyncDashboard from './feature/SyncDashboard';
 import TabletSync from './feature/TabletSync';
-import { LayoutGrid, Tablet, FolderSync } from 'lucide-react';
+import { HardDrive, Tablet, FolderSync } from 'lucide-react';
+import aniwheel from './assets/aniwheel.gif';
 import './App.css';
 
 function App() {
@@ -13,15 +14,15 @@ function App() {
     <div className="flex h-screen w-screen bg-dark-900 text-white overflow-hidden">
       {/* Sidebar */}
       <aside className="w-16 flex flex-col items-center py-6 border-r border-dark-800 bg-dark-900 z-50">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-primary-900/30 mb-8">
-          <FolderSync className="w-6 h-6 text-white" />
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-primary-900/30 mb-8 overflow-hidden bg-black">
+          <img src={aniwheel} alt="Logo" className="w-full h-full object-contain" />
         </div>
 
         <div className="flex flex-col gap-4 w-full px-2">
           <SidebarItem
             active={activeTab === 'media-sync'}
             onClick={() => setActiveTab('media-sync')}
-            icon={<LayoutGrid className="w-6 h-6" />}
+            icon={<HardDrive className="w-6 h-6" />}
             label="Media Sync"
           />
           <SidebarItem
